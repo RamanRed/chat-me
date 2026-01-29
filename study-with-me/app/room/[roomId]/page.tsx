@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
-import { useParams } from "next/navigation";
-import { socket } from "@/libs/socket";
+import { useParams, useRouter } from "next/navigation";
+import { socket } from "@/lib/socket";
 import { useWebRTC } from "@/hooks/useWebRTC";
 
 export default function RoomPage() {
   const { roomId } = useParams();
-  const { createPeer, getMedia, pcRef } = useWebRTC(socket);
+  const router = useRouter();
+  const { createPeer, getMedia, pcRef, cleanup } = useWebRTC(socket);
 
   useEffect(() => {
     socket.connect();
@@ -39,25 +40,43 @@ export default function RoomPage() {
     });
 
     socket.on("answer", async (answer) => {
-      const pc = pcRef.current!;
-      await pc.setRemoteDescription(answer);
+      await pcRef.current?.setRemoteDescription(answer);
     });
 
     socket.on("ice_candidate", async (candidate) => {
-      const pc = pcRef.current!;
-      await pc.addIceCandidate(candidate);
+      await pcRef.current?.addIceCandidate(candidate);
+    });
+
+    socket.on("user_left", () => {
+      cleanup();
+      alert("Other user left");
+      router.push("/");
     });
 
     return () => {
+      socket.emit("leave_room", { roomCode: roomId });
       socket.disconnect();
-      pcRef.current?.close();
+      cleanup();
     };
   }, []);
 
   return (
-    <div className="flex gap-4 p-4">
-      <video id="localVideo" autoPlay muted playsInline className="w-1/2 border" />
-      <video id="remoteVideo" autoPlay playsInline className="w-1/2 border" />
+    <div className="flex flex-col gap-4 p-4">
+      <div className="flex gap-4">
+        <video id="localVideo" autoPlay muted playsInline className="w-1/2 border" />
+        <video id="remoteVideo" autoPlay playsInline className="w-1/2 border" />
+      </div>
+
+      <button
+        onClick={() => {
+          socket.emit("leave_room", { roomCode: roomId });
+          cleanup();
+          router.push("/");
+        }}
+        className="bg-red-500 text-white px-4 py-2 rounded"
+      >
+        Leave
+      </button>
     </div>
   );
 }

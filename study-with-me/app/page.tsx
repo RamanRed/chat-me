@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { socket } from "@/libs/socket";
+import { socket } from "@/lib/socket";
 
 export default function HomePage() {
   const [email, setEmail] = useState("");

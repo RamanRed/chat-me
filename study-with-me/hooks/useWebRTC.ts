@@ -44,6 +44,19 @@ export function useWebRTC(socket: any) {
     localStreamRef.current = stream;
     return stream;
   };
+  const cleanup = () => {
+  pcRef.current?.close();
+  pcRef.current = null;
 
-  return { createPeer, getMedia, pcRef, localStreamRef };
+  localStreamRef.current?.getTracks().forEach(track => {
+    track.stop();
+  });
+
+  localStreamRef.current = null;
+
+  const remoteVideo = document.getElementById("remoteVideo") as HTMLVideoElement;
+  if (remoteVideo) remoteVideo.srcObject = null;
+};
+    
+  return { createPeer, getMedia, pcRef, localStreamRef, cleanup };
 }
