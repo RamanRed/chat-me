@@ -1,0 +1,17 @@
+WEB RTC
+web rtc is use from direct connection between two computers
+
+we share our public ip addresses to other othe pc by server 
+as both both pc are conneccted we do not need server 
+we can directly share data between two
+
+1. know our own public ip TURN ICE
+2. share our public ip by signalling
+3. now we can use media sharing
+
+only two devices can connect to each other at a time
+
+and we have 3 architecture for it
+1. peer-2-peer best and suitable for 2 pc interaction
+2. mesh topology every device is connected to other
+3. SFU . all device are connected to a server and server create a single grid which has frame of all devices and that grid is shared to all devices looking like all are connected   
