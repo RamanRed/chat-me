@@ -83,6 +83,12 @@ io.on("connection", (socket) => {
 });
 
 // ✅ MUST bind 0.0.0.0 for Render
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
-});
+server.listen(
+  {
+    port: PORT,
+    host: "0.0.0.0",
+  },
+  () => {
+    console.log(`Server running on port ${PORT}`);
+  }
+);
