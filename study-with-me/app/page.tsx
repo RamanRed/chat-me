@@ -15,25 +15,33 @@ export default function HomePage() {
       return;
     }
 
-    // connect socket (if not connected)
-    if (!socket.connected) {
-      socket.connect();
+    // If already connected, emit directly
+    if (socket.connected) {
+      socket.emit("join_room", {
+        emailId: email,
+        roomCode,
+      });
+
+      router.push(`/room/${roomCode}`);
+      return;
     }
 
-    // emit join event
-    socket.emit("join_room", {
-      emailId: email,
-      roomCode: roomCode,
-    });
+    // Otherwise wait for connection
+    socket.connect();
 
-    // navigate to room page
-    router.push(`/room/${roomCode}`);
+    socket.once("connect", () => {
+      socket.emit("join_room", {
+        emailId: email,
+        roomCode,
+      });
+
+      router.push(`/room/${roomCode}`);
+    });
   };
 
   return (
     <div className="w-screen h-screen flex justify-center items-center">
       <div className="flex flex-col gap-3 p-6 border rounded-xl">
-        
         <input
           type="email"
           placeholder="Enter your email"

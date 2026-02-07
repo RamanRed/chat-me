@@ -8,63 +8,72 @@ import { useWebRTC } from "@/hooks/useWebRTC";
 export default function RoomPage() {
   const { roomId } = useParams();
   const router = useRouter();
-  const { createPeer, getMedia, pcRef, cleanup } = useWebRTC(socket);
+
+  const {
+    createPeer,
+    getMedia,
+    setupSignaling,
+    pcRef,
+    cleanup,
+  } = useWebRTC(socket);
 
   useEffect(() => {
-    socket.connect();
+    // ❌ DO NOT reconnect socket here
+    // Socket is already connected from homepage
 
     async function init() {
-      const stream = await getMedia();
-      const pc = await createPeer();
-
-      stream.getTracks().forEach(track => {
-        pc.addTrack(track, stream);
-      });
+      await createPeer();
+      await getMedia();
+      setupSignaling();
     }
 
     init();
 
-    socket.on("user_joined", async () => {
-      const pc = pcRef.current!;
+    // ✅ Only THIS side creates offer when second user joins
+    const handleUserJoined = async () => {
+      const pc = pcRef.current;
+      if (!pc) return;
+
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
+
       socket.emit("offer", offer);
-    });
+    };
 
-    socket.on("offer", async (offer) => {
-      const pc = pcRef.current!;
-      await pc.setRemoteDescription(offer);
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      socket.emit("answer", answer);
-    });
-
-    socket.on("answer", async (answer) => {
-      await pcRef.current?.setRemoteDescription(answer);
-    });
-
-    socket.on("ice_candidate", async (candidate) => {
-      await pcRef.current?.addIceCandidate(candidate);
-    });
-
-    socket.on("user_left", () => {
+    const handleUserLeft = () => {
       cleanup();
       alert("Other user left");
       router.push("/");
-    });
+    };
+
+    socket.on("user_joined", handleUserJoined);
+    socket.on("user_left", handleUserLeft);
 
     return () => {
+      socket.off("user_joined", handleUserJoined);
+      socket.off("user_left", handleUserLeft);
+
       socket.emit("leave_room", { roomCode: roomId });
-      socket.disconnect();
       cleanup();
     };
-  }, []);
+  }, [roomId]);
 
   return (
     <div className="flex flex-col gap-4 p-4">
       <div className="flex gap-4">
-        <video id="localVideo" autoPlay muted playsInline className="w-1/2 border" />
-        <video id="remoteVideo" autoPlay playsInline className="w-1/2 border" />
+        <video
+          id="localVideo"
+          autoPlay
+          muted
+          playsInline
+          className="w-1/2 border"
+        />
+        <video
+          id="remoteVideo"
+          autoPlay
+          playsInline
+          className="w-1/2 border"
+        />
       </div>
 
       <button
